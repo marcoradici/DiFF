@@ -1,0 +1,83 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2512
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Bold;\f1\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww13020\viewh10220\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qc\partightenfactor0
+
+\f0\b\fs24 \cf0 Modifiche al FortranWrapper per evoluzione chiral-even dell\'92unpolarized DiFF D1(z,M;Q)
+\f1\b0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+=> Contenuto della directory\
+\
+- zd1\{u,d,s,c\}.f90  \
+Functions per calcolare D1q(z,M;Q0) per q=u,d,s,c con scala iniziale Q0=1 GeV. \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 Si usano i risultati del nostro fit alla sezione d\'92urto non polarizzata per la produzione di coppie (\uc0\u960 +\u960 -) in e+e- annihilations.  \
+Non essendoci dati sperimentali, il fit e\'92 applicato all\'92output di PYTHIA adattato alla cinematica BELLE. \
+Essendo la statistica illimitata, abbiamo fittato separatamente diversi canali attivi per massa invariante M =< 1 GeV: risonanze (K, rho, omega) e background. \
+I parametri sono quindi parecchi (piu\'92 di 70) e sono implementati tutti direttamente nelle functions, che quindi hanno come input solo z e M. \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+- evo_grid.f90    \
+Calcola le grid:  50 punti per  0.3 < M < 1.3 GeV , 50 punti per  1 < Q < 100 GeV ,  30 punti per  0.2 < z < 1\
+\
+- DiFFD1grid.f90    \
+Main source file. \
+In base a quanto detto sopra, c\'92e\'92 un do loop esterno sulla massa invariante M, e per ogni M si inizializza APFEL e si  evolve ciascuna function per ciascun flavor alla scala Q desiderata. \
+La massa invariante M e\'92 trattata come un parametro e viene passata alla parte di codice in C++ come l\'92array p[1], cioe\'92 dimensionato ad un elemento. \
+A Q0 inoltre si assume simmetria di isospin e coniugazione di carica, che implicano q=qbar. \
+\
+- EvolveD1.cc\
+Front-end ad APFEL. \
+Adattato per richiamare le quattro functions zd1\{u,d,s,c\} (z,M) come variabili di z e con un parametro M. \
+Per via delle simmetrie di cui sopra, la base di evoluzione contiene solo le componenti Singlet e TXX (XX=3,8,15,24), mentre le componenti Valence e VXX sono tutte nulle. Per D1g(Q0), di cui non sappiamo nulla, ci sono tre ipotesi possibili: gluon=0, gluon=up/4, gluon=up. Attualmente e\'92 attiva la prima. \
+L\'92evoluzione e\'92 di tipo chiral-even time-like, e gli unici test condotti finora sono al LO. \
+\
+- test.f90\
+Versione di DiFFD1grid.f90 dove il do loop sulla massa invariante M e\'92 sostituito dal valore fissato M=0.8 GeV. \
+\
+- grid/LO\
+Direttorio per l\'92output del programma. \
+\
+- grid/LO/zD1_PV15_LO_1.dat\
+Output per il caso dove D1g(Q0)=0 ed evoluzione al LO. \
+All\'92inizio vengono stampate le grids in M, Q, z. \
+Poi c\'92e\'92 la D1q(z,M;Q). I suoi valori sono scritti nel seguente ordine:\
+do loop su M\
+    do loop su Q\
+         do loop su z\
+              D1q(z,M;Q) con q=tbar,bbar,cbar,sbar,ubar,dbar,g,d,u,s,c,b,t \
+         end do\
+    end do\
+end do\
+\
+- grid/LO/prova_1.dat\
+Output nella stessa configurazione precedente eccetto che la massa invariante e\'92 fissata a M=0.8 GeV. \
+Test effettuato per verificare che non ci fossero sporcamenti di memoria dovuti al fatto che l\'92inizializzazione di APFEL (e del puntatore all\'92array di parametri) e\'92 effettuata dentro la procedura ciclica del do loop su M. \
+Questo output e\'92 identico al corrispondente caso del file zD1_PV15_LO_1.dat  che puo\'92 essere ritrovato alla seguente linea:\
+35     (offset occupato dalla stampa delle griglie) +\
+[ 25  (M=0.8 GeV e\'92 il 26esimo valore in griglia)  x   50  (i valori di Q)  x   30 (i valori di z)  ]   \
+= 37535\
+\
+- grid/LO/HOPPET.dat\
+Output nella stessa configurazione, cioe\'92 D1g(Q0)=0 ed evoluzione LO, ma prodotto da HOPPET. \
+\
+
+\f0\b Osservazioni:  confronto  zD1_PV15_LO_1.dat   e   HOPPET.dat\
+\
+
+\f1\b0 - Per ogni M, quando Q=Q0  l\'92output di un file e\'92 molto simile a quello dell\'92altro (non e\'92 identico perche\'92 le griglie in z non sono esattamente le stesse). I flavor attivi sono d,u,s,c e i corrispondenti anti-quark\
+\
+- per Q0 < Q < mc < mb    anche la componente b si attiva ma con numeri piccolissimi (~ 10^-15 , 10^-16) e negativi. Il confronto con HOPPET rimane buono per tutti gli altri flavor \
+\
+- per Q0 < mc < Q < mb    la componente c diventa piu\'92 piccola dell\'92output di HOPPET di un fattore ~ 100, pur mantenendo ad occhio lo stesso andamento in z. La componente b e\'92 sempre piccolissima e negativa. Il confronto con gli altri flavor e\'92 sempre buono\
+\
+- per Q0 < mc < mb < Q   la componente b assume valori positivi e ragionevoli. Quella c e\'92 sempre un fattore 100 piu\'92 piccola di HOPPET, ma con andamento in z ragionevole. Il confronto per gli altri flavor rimane buono. \
+\
+Le soglie mc e mb sembrano quindi avere un ruolo \'93opposto\'94: la D1c per Q < mc sembra ok, poi per Q > mc no. Invece la D1b per Q < mb sembra not ok, e poi diventa ok per Q > mb. \
+\
+\
+\
+}
