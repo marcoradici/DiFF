@@ -1,0 +1,80 @@
+Modifiche al FortranWrapper per evoluzione chiral-even dell'unpolarized DiFF D1(z,M;Q)
+
+
+=> Contenuto della directory
+
+- zd1{u,d,s,c}.f90
+Functions per calcolare D1q(z,M;Q0) per q=u,d,s,c con scala iniziale Q0=1 GeV.
+Si usano i risultati del nostro fit alla sezione d'urto non polarizzata per la produzione di coppie (pi+ pi-) in e+e- annihilations.
+Non essendoci dati sperimentali, il fit e' applicato all'output di PYTHIA adattato alla cinematica BELLE.
+Essendo la statistica illimitata, abbiamo fittato separatamente diversi canali attivi per massa invariante M =< 1 GeV: risonanze (K, rho, omega) e background.
+I parametri sono quindi parecchi (piu' di 70) e sono implementati tutti direttamente nelle functions, che quindi hanno come input solo z e M.
+
+- evo_grid.f90 
+
+Calcola le grid: 50 punti per 0.3 < M < 1.3 GeV , 50 punti per 1 < Q < 100 GeV , 30 punti per 0.2 < z < 1
+
+
+- DiFFD1grid.f90 
+Main source file.
+In base a quanto detto sopra, c'e' un do loop esterno sulla massa invariante M, e per ogni M si inizializza APFEL e si evolve ciascuna function per ciascun flavor alla scala Q desiderata.
+La massa invariante M e' trattata come un parametro e viene passata alla parte di codice in C++ come l'array p[1], cioe' dimensionato ad un elemento.
+A Q0 inoltre si assume simmetria di isospin e coniugazione di carica, che implicano q=qbar.
+
+
+- EvolveD1.cc
+Front-end ad APFEL.
+Adattato per richiamare le quattro functions zd1{u,d,s,c} (z,M) come variabili di z e con un parametro M. 
+Per via delle simmetrie di cui sopra, la base di evoluzione contiene solo le componenti Singlet e TXX (XX=3,8,15,24), mentre le componenti Valence e VXX sono tutte nulle. 
+Per D1g(Q0), di cui non sappiamo nulla, ci sono tre ipotesi possibili: gluon=0, 
+gluon=up/4, gluon=up. Attualmente e' attiva la prima. 
+L'evoluzione e' chiral-even time-like, e gli unici test condotti finora sono al LO.
+
+
+- test.f90
+Versione di DiFFD1grid.f90 dove il do loop sulla massa invariante M e' sostituito dal valore fissato M=0.8 GeV.
+
+
+- grid/LO
+Direttorio per l'output del programma.
+
+
+- grid/LO/zD1_PV15_LO_1.dat
+Output per il caso dove D1g(Q0)=0 ed evoluzione al LO. 
+All'inizio vengono stampate le grids in M, Q, z.
+Poi c'e' la D1q(z,M;Q). I suoi valori sono scritti nel seguente ordine:
+do loop su M
+  do loop su Q
+    do loop su z
+      D1q(z,M;Q) con q=tbar,bbar,cbar,sbar,ubar,dbar,g,d,u,s,c,b,t 
+    end do
+  end do
+end do
+
+
+- grid/LO/prova_1.dat
+Output nella stessa configurazione precedente eccetto che la massa invariante e' fissata a M=0.8 GeV. 
+Test effettuato per verificare che non ci fossero sporcamenti di memoria dovuti al fatto che l'inizializzazione di APFEL (e del puntatore all'array di parametri) e' effettuata dentro la procedura ciclica del do loop su M. 
+Questo output e' identico al corrispondente caso del file zD1_PV15_LO_1.dat che puo' essere ritrovato alla seguente linea:
+35 (offset occupato dalla stampa delle griglie) +
+[ 25 (M=0.8 GeV e' il 26esimo valore in griglia) x 50 (i valori di Q) x 30 (i valori di z) ] 
+= 37535
+
+
+- grid/LO/HOPPET.dat
+Output nella stessa configurazione, cioe' D1g(Q0)=0 ed evoluzione LO, ma prodotto da HOPPET.
+
+
+
+Osservazioni: confronto zD1_PV15_LO_1.dat e HOPPET.dat
+
+- Per ogni M, quando Q=Q0 l'output di un file e' molto simile a quello dell'altro (non e' identico perche' le griglie in z non sono esattamente le stesse). I flavor attivi sono d,u,s,c e i corrispondenti anti-quark
+
+- per Q0 < Q < mc < mb anche la componente b si attiva ma con numeri piccolissimi (~ 10^-15 , 10^-16) e negativi. Il confronto con HOPPET rimane buono per tutti gli altri flavor 
+
+- per Q0 < mc < Q < mb la componente c diventa piu' piccola dell'output di HOPPET di un fattore ~ 100, pur mantenendo ad occhio lo stesso andamento in z. La componente b e' sempre piccolissima e negativa. Il confronto con gli altri flavor e' sempre buono
+
+- per Q0 < mc < mb < Q la componente b assume valori positivi e ragionevoli. Quella c e' sempre un fattore 100 piu' piccola di HOPPET, ma con andamento in z ragionevole. Il confronto per gli altri flavor rimane buono. 
+
+
+Le soglie mc e mb sembrano quindi avere un ruolo "opposto": la D1c per Q < mc sembra ok, poi per Q > mc no. Invece la D1b per Q < mb sembra not ok, e poi diventa ok per Q > mb. 
